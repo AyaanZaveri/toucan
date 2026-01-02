@@ -59,7 +59,7 @@ export default function Home() {
 
   return (
     <div style={{ height: "100vh", width: "100vw" }}>
-      <ReactFlow>
+      <ReactFlow proOptions={{ hideAttribution: true }}>
         <Background />
         <Controls />
       </ReactFlow>

@@ -129,7 +129,7 @@ const renderSelectWidget = ({
       ? value
       : typeof widgetSpec?.defaultValue === "string"
         ? widgetSpec.defaultValue
-        : options[0] ?? ""
+        : (options[0] ?? "")
 
   return (
     <Select

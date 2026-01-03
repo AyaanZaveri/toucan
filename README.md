@@ -4,7 +4,20 @@ an alternative frontend for [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
 
 ## quick start
 
-currently unusable
+Run ComfyUI from its repo root with:
+
+```bash
+python main.py --front-end-version ichikamaia/toucan@latest
+```
+
+If your Python is named differently or you use a venv, adjust accordingly (e.g. `py -3.12`, `./.venv/bin/python`, etc.).
+
+For the latest alpha builds (GitHub prereleases):
+```bash
+python main.py --front-end-version ichikamaia/toucan@prerelease
+```
+
+`@latest` tracks the newest stable release. `@prerelease` tracks the newest prerelease (e.g. `alpha.N`) and may be less stable.
 
 ## mission
 

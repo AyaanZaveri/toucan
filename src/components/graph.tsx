@@ -7,6 +7,7 @@ import {
   Controls,
   type Edge,
   ReactFlow,
+  type ReactFlowJsonObject,
   type ReactFlowInstance,
   useEdgesState,
   useNodesState,
@@ -36,6 +37,47 @@ type ResolvedConnectionSlots = {
   targetSchema: NodeSchema
   sourceSlot: OutputSlot
   targetSlot: InputSlot
+}
+
+const WORKFLOW_STORAGE_KEY = "toucan:workflow:v1"
+const WORKFLOW_SNAPSHOT_VERSION = 1 as const
+
+type WorkflowSnapshot = {
+  version: typeof WORKFLOW_SNAPSHOT_VERSION
+  savedAt: string
+  graph: ReactFlowJsonObject<CanvasNode, Edge>
+}
+
+const isWorkflowSnapshot = (value: unknown): value is WorkflowSnapshot => {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const snapshot = value as WorkflowSnapshot
+  if (snapshot.version !== WORKFLOW_SNAPSHOT_VERSION) {
+    return false
+  }
+  if (typeof snapshot.savedAt !== "string") {
+    return false
+  }
+  if (
+    !snapshot.graph ||
+    !Array.isArray(snapshot.graph.nodes) ||
+    !Array.isArray(snapshot.graph.edges) ||
+    typeof snapshot.graph.viewport !== "object"
+  ) {
+    return false
+  }
+
+  return true
+}
+
+const createNodeId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID()
+  }
+
+  return `node-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 const isTypeCompatible = (resolved: ResolvedConnectionSlots) => {
@@ -169,6 +211,81 @@ export function ComfyFlowCanvas() {
 
   const reactFlowInstanceRef =
     React.useRef<ReactFlowInstance<CanvasNode> | null>(null)
+  const hasRestoredRef = React.useRef(false)
+
+  const saveWorkflow = React.useCallback(() => {
+    const instance = reactFlowInstanceRef.current
+    if (!instance || typeof window === "undefined") {
+      return
+    }
+
+    const graph = instance.toObject()
+    const snapshot: WorkflowSnapshot = {
+      version: WORKFLOW_SNAPSHOT_VERSION,
+      savedAt: new Date().toISOString(),
+      graph,
+    }
+
+    try {
+      window.localStorage.setItem(
+        WORKFLOW_STORAGE_KEY,
+        JSON.stringify(snapshot),
+      )
+    } catch {
+      return
+    }
+  }, [])
+
+  const loadWorkflow = React.useCallback(
+    (instance: ReactFlowInstance<CanvasNode, Edge>) => {
+      if (typeof window === "undefined") {
+        return
+      }
+
+      try {
+        const raw = window.localStorage.getItem(WORKFLOW_STORAGE_KEY)
+        if (!raw) {
+          return
+        }
+        const parsed = JSON.parse(raw) as unknown
+        if (!isWorkflowSnapshot(parsed)) {
+          return
+        }
+
+        setNodes(parsed.graph.nodes)
+        setEdges(parsed.graph.edges)
+        instance.setViewport(parsed.graph.viewport)
+      } catch {
+        return
+      }
+    },
+    [setEdges, setNodes],
+  )
+
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      ) {
+        return
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+        event.preventDefault()
+        saveWorkflow()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [saveWorkflow])
 
   const handleAddNode = React.useCallback(
     (nodeDef: NodeCatalogEntry) => {
@@ -191,7 +308,7 @@ export function ComfyFlowCanvas() {
         return [
           ...current,
           {
-            id: `node-${index + 1}`,
+            id: createNodeId(),
             type: "comfy",
             position,
             data: {
@@ -254,6 +371,11 @@ export function ComfyFlowCanvas() {
           nodeTypes={nodeTypes}
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance
+            if (hasRestoredRef.current) {
+              return
+            }
+            hasRestoredRef.current = true
+            loadWorkflow(instance)
           }}
           proOptions={{ hideAttribution: true }}
         >

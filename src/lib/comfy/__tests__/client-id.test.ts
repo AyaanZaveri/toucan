@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { getComfyClientId } from "../client-id"
 
 describe("getComfyClientId", () => {
@@ -20,7 +20,7 @@ describe("getComfyClientId", () => {
   it("returns the existing ID if it exists in localStorage", () => {
     const existingId = "existing-test-id"
     localStorage.setItem(STORAGE_KEY, existingId)
-    
+
     const id = getComfyClientId()
     expect(id).toBe(existingId)
   })
@@ -29,7 +29,7 @@ describe("getComfyClientId", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("Security Error")
     })
-    
+
     const id = getComfyClientId()
     expect(id).toBeDefined()
     expect(typeof id).toBe("string")
@@ -37,7 +37,7 @@ describe("getComfyClientId", () => {
 
   it("works in SSR environment (window is undefined)", () => {
     vi.stubGlobal("window", undefined)
-    
+
     const id = getComfyClientId()
     expect(id).toBeDefined()
     expect(typeof id).toBe("string")
@@ -50,7 +50,7 @@ describe("getComfyClientId", () => {
       if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
         const mockUuid = "123e4567-e89b-12d3-a456-426614174000"
         const spy = vi.spyOn(crypto, "randomUUID").mockReturnValue(mockUuid)
-        
+
         const id = getComfyClientId()
         expect(id).toBe(mockUuid)
         spy.mockRestore()

@@ -35,6 +35,8 @@ export function ComfyFlowCanvas() {
   } = useNodeCatalog()
   const [nodes, setNodes, onNodesChange] = useNodesState<CanvasNode>([])
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const schemasReady = Object.keys(nodeSchemas).length > 0
+  const [isFlowReady, setIsFlowReady] = React.useState(false)
 
   const reactFlowInstanceRef =
     React.useRef<ReactFlowInstance<CanvasNode> | null>(null)
@@ -74,6 +76,15 @@ export function ComfyFlowCanvas() {
     ? "Loading nodes..."
     : (nodesError ?? "No nodes found.")
 
+  React.useEffect(() => {
+    const instance = reactFlowInstanceRef.current
+    if (!instance || !schemasReady || !isFlowReady) {
+      return
+    }
+    // Ensure handle metadata is available before rehydrating edges.
+    restoreWorkflow(instance)
+  }, [isFlowReady, restoreWorkflow, schemasReady])
+
   return (
     <NodeSchemaContext.Provider value={nodeSchemas}>
       <div style={{ height: "100vh", width: "100vw" }}>
@@ -87,7 +98,7 @@ export function ComfyFlowCanvas() {
           nodeTypes={nodeTypes}
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance
-            restoreWorkflow(instance)
+            setIsFlowReady(true)
           }}
           proOptions={{ hideAttribution: true }}
         >

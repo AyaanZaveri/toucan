@@ -1,0 +1,74 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semver (e.g. 1.2.3 or 1.2.3-alpha.1)"
+        required: true
+      target_sha:
+        description: "Git SHA to tag and release"
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.target_sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Build dist.zip
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          out_dir = Path("out")
+          if not out_dir.is_dir():
+              raise SystemExit("Static export output not found at ./out")
+
+          with zipfile.ZipFile("dist.zip", "w", zipfile.ZIP_DEFLATED) as archive:
+              for path in out_dir.rglob("*"):
+                  if path.is_file():
+                      archive.write(path, path.relative_to(out_dir))
+          PY
+      - name: Validate version + set prerelease
+        id: version
+        run: |
+          VERSION="${{ inputs.version }}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+)?$'; then
+            echo "Invalid version: $VERSION"
+            exit 1
+          fi
+          if [[ "$VERSION" == *-alpha.* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create tag
+        run: |
+          VERSION="${{ inputs.version }}"
+          TARGET_SHA="${{ inputs.target_sha }}"
+          git cat-file -e "$TARGET_SHA^{commit}"
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "Tag v$VERSION already exists"
+            exit 1
+          fi
+          git tag "v$VERSION" "$TARGET_SHA"
+          git push origin "v$VERSION"
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          generate_release_notes: true
+          files: dist.zip

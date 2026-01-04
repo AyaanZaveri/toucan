@@ -21,6 +21,13 @@ import {
   type WidgetValue,
 } from "@/lib/comfy/objectInfo"
 import { buildViewUrl } from "@/lib/comfy/view-url"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 import { cn } from "@/lib/utils"
 
 export type ComfyNodeData = {
@@ -68,6 +75,41 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
   const nodeOutputs = executionState?.nodeOutputs[id]
   const outputImages =
     schema?.isOutputNode && nodeOutputs?.images ? nodeOutputs.images : []
+  const outputImageItems = outputImages.flatMap((image, index) => {
+    const previewUrl = buildViewUrl({
+      apiBase: API_BASE,
+      image,
+      preview: "webp;90",
+    })
+    if (!previewUrl) {
+      return []
+    }
+    const fullUrl = buildViewUrl({ apiBase: API_BASE, image })
+    const imageElement = (
+      <img
+        src={previewUrl}
+        alt={`Output ${index + 1}`}
+        className="block h-24 w-full object-contain"
+        loading="lazy"
+        decoding="async"
+      />
+    )
+    const containerClassName =
+      "overflow-hidden rounded-md border border-slate-200 bg-slate-50"
+    const content = fullUrl ? (
+      <a
+        href={fullUrl}
+        target="_blank"
+        rel="noreferrer"
+        className={containerClassName}
+      >
+        {imageElement}
+      </a>
+    ) : (
+      <div className={containerClassName}>{imageElement}</div>
+    )
+    return [{ key: `${image.filename}-${index}`, content }]
+  })
   const progressPercent =
     nodeProgress && nodeProgress.max > 0
       ? Math.min(100, (nodeProgress.value / nodeProgress.max) * 100)
@@ -265,58 +307,26 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
           />
         </div>
       ) : null}
-      {outputImages.length > 0 ? (
+      {outputImageItems.length > 0 ? (
         <div className="mt-3 border-t border-slate-100 pt-3">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
             Output
           </div>
-          <div
-            className={cn(
-              "mt-2 grid gap-2",
-              outputImages.length > 1 ? "grid-cols-2" : "grid-cols-1",
-            )}
-          >
-            {outputImages.map((image, index) => {
-              const previewUrl = buildViewUrl({
-                apiBase: API_BASE,
-                image,
-                preview: "webp;90",
-              })
-              const fullUrl = buildViewUrl({ apiBase: API_BASE, image })
-              if (!previewUrl) {
-                return null
-              }
-              const imageElement = (
-                <img
-                  src={previewUrl}
-                  alt={`Output ${index + 1}`}
-                  className="block h-24 w-full object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              )
-              const containerClassName =
-                "overflow-hidden rounded-md border border-slate-200 bg-slate-50"
-              if (fullUrl) {
-                return (
-                  <a
-                    key={`${image.filename}-${index}`}
-                    href={fullUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={containerClassName}
-                  >
-                    {imageElement}
-                  </a>
-                )
-              }
-              return (
-                <div key={`${image.filename}-${index}`} className={containerClassName}>
-                  {imageElement}
-                </div>
-              )
-            })}
-          </div>
+          {outputImageItems.length > 1 ? (
+            <Carousel className="mt-2" opts={{ align: "start" }}>
+              <CarouselContent className="ml-0">
+                {outputImageItems.map((item) => (
+                  <CarouselItem key={item.key} className="pl-0">
+                    {item.content}
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="left-2" size="icon-sm" variant="outline" />
+              <CarouselNext className="right-2" size="icon-sm" variant="outline" />
+            </Carousel>
+          ) : (
+            <div className="mt-2">{outputImageItems[0]?.content}</div>
+          )}
         </div>
       ) : null}
     </div>

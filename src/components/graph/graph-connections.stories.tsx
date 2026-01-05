@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import {
+  type Connection,
   type Edge,
   ReactFlow,
   ReactFlowProvider,
@@ -19,6 +20,7 @@ import {
   type ExecutionState,
   ExecutionStateContext,
 } from "@/components/graph/execution-context"
+import { useConnectionAutosnap } from "@/components/graph/use-connection-autosnap"
 import { useGraphConnections } from "@/components/graph/use-graph-connections"
 import type { NodeSchemaMap } from "@/lib/comfy/objectInfo"
 
@@ -126,9 +128,25 @@ function ConnectionFlow() {
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
-      />
+      >
+        <ConnectionAutosnapController
+          isConnectionValid={isConnectionValid}
+          nodeSchemas={nodeSchemas}
+        />
+      </ReactFlow>
     </div>
   )
+}
+
+const ConnectionAutosnapController = ({
+  isConnectionValid,
+  nodeSchemas,
+}: {
+  isConnectionValid: (connection: Connection | Edge) => boolean
+  nodeSchemas: NodeSchemaMap
+}) => {
+  useConnectionAutosnap({ isConnectionValid, nodeSchemas })
+  return null
 }
 
 const meta = {

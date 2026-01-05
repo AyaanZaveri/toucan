@@ -1,12 +1,20 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import {
   type Connection,
+  type ConnectionLineComponentProps,
+  ConnectionLineType,
   type Edge,
+  type FinalConnectionState,
+  getBezierPath,
+  getSimpleBezierPath,
+  getSmoothStepPath,
+  getStraightPath,
   ReactFlow,
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
 } from "@xyflow/react"
+import * as React from "react"
 import "@xyflow/react/dist/style.css"
 
 import "../../app/globals.css"
@@ -20,7 +28,7 @@ import {
   type ExecutionState,
   ExecutionStateContext,
 } from "@/components/graph/execution-context"
-import { useConnectionAutosnap } from "@/components/graph/use-connection-autosnap"
+import { useConnectionAutosnapCandidate } from "@/components/graph/use-connection-autosnap"
 import { useGraphConnections } from "@/components/graph/use-graph-connections"
 import type { NodeSchemaMap } from "@/lib/comfy/objectInfo"
 
@@ -108,6 +116,7 @@ const initialNodes: CanvasNode[] = [
 function ConnectionFlow() {
   const [nodes, , onNodesChange] = useNodesState<CanvasNode>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const autosnapCandidateRef = React.useRef<Connection | null>(null)
 
   const { isConnectionValid, handleConnect } = useGraphConnections({
     nodes,
@@ -115,6 +124,90 @@ function ConnectionFlow() {
     nodeSchemas,
     setEdges,
   })
+
+  const handleAutosnapCandidate = React.useCallback(
+    (candidate: Connection | null) => {
+      autosnapCandidateRef.current = candidate
+    },
+    [],
+  )
+
+  const handleConnectEnd = React.useCallback(
+    (
+      _event: MouseEvent | TouchEvent,
+      connectionState: FinalConnectionState,
+    ) => {
+      if (connectionState?.toHandle && connectionState?.isValid) {
+        return
+      }
+      const candidate = autosnapCandidateRef.current
+      if (candidate) {
+        handleConnect(candidate)
+      }
+    },
+    [handleConnect],
+  )
+
+  const AutosnapConnectionLine = React.useMemo(() => {
+    const ConnectionLine = ({
+      connectionLineStyle,
+      connectionLineType,
+      fromX,
+      fromY,
+      toX,
+      toY,
+      fromPosition,
+      toPosition,
+    }: ConnectionLineComponentProps<CanvasNode>) => {
+      const preview = useConnectionAutosnapCandidate({
+        isConnectionValid,
+        nodeSchemas,
+      })
+      const targetX = preview?.to.x ?? toX
+      const targetY = preview?.to.y ?? toY
+      const targetPosition = preview?.toPosition ?? toPosition
+      const adjustedTargetY =
+        Math.abs(targetY - fromY) < 0.5 ? targetY + 0.5 : targetY
+      const pathParams = {
+        sourceX: fromX,
+        sourceY: fromY,
+        sourcePosition: fromPosition,
+        targetX,
+        targetY: adjustedTargetY,
+        targetPosition,
+      }
+      let path = ""
+      switch (connectionLineType) {
+        case ConnectionLineType.Bezier:
+          ;[path] = getBezierPath(pathParams)
+          break
+        case ConnectionLineType.SimpleBezier:
+          ;[path] = getSimpleBezierPath(pathParams)
+          break
+        case ConnectionLineType.Step:
+          ;[path] = getSmoothStepPath({ ...pathParams, borderRadius: 0 })
+          break
+        case ConnectionLineType.SmoothStep:
+          ;[path] = getSmoothStepPath(pathParams)
+          break
+        default:
+          ;[path] = getStraightPath(pathParams)
+      }
+      return (
+        <path
+          d={path}
+          fill="none"
+          stroke="var(--xy-connectionline-stroke, var(--xy-connectionline-stroke-default))"
+          strokeWidth={1}
+          className="react-flow__connection-path"
+          style={connectionLineStyle}
+        />
+      )
+    }
+
+    ConnectionLine.displayName = "AutosnapConnectionLine"
+    return ConnectionLine
+  }, [isConnectionValid])
 
   return (
     <div className="h-full w-full">
@@ -124,14 +217,17 @@ function ConnectionFlow() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={handleConnect}
+        onConnectEnd={handleConnectEnd}
         isValidConnection={isConnectionValid}
         nodeTypes={nodeTypes}
+        connectionLineComponent={AutosnapConnectionLine}
         fitView
         proOptions={{ hideAttribution: true }}
       >
         <ConnectionAutosnapController
           isConnectionValid={isConnectionValid}
           nodeSchemas={nodeSchemas}
+          onCandidateChange={handleAutosnapCandidate}
         />
       </ReactFlow>
     </div>
@@ -141,11 +237,20 @@ function ConnectionFlow() {
 const ConnectionAutosnapController = ({
   isConnectionValid,
   nodeSchemas,
+  onCandidateChange,
 }: {
   isConnectionValid: (connection: Connection | Edge) => boolean
   nodeSchemas: NodeSchemaMap
+  onCandidateChange: (candidate: Connection | null) => void
 }) => {
-  useConnectionAutosnap({ isConnectionValid, nodeSchemas })
+  const preview = useConnectionAutosnapCandidate({
+    isConnectionValid,
+    nodeSchemas,
+  })
+
+  React.useEffect(() => {
+    onCandidateChange(preview?.connection ?? null)
+  }, [onCandidateChange, preview])
   return null
 }
 

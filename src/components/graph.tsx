@@ -2,8 +2,16 @@
 
 import {
   Background,
+  type Connection,
+  type ConnectionLineComponentProps,
+  ConnectionLineType,
   Controls,
   type Edge,
+  type FinalConnectionState,
+  getBezierPath,
+  getSimpleBezierPath,
+  getSmoothStepPath,
+  getStraightPath,
   ReactFlow,
   type ReactFlowInstance,
   useEdgesState,
@@ -21,12 +29,36 @@ import { ExecutionStateContext } from "@/components/graph/execution-context"
 import { ExecutionHud } from "@/components/graph/execution-hud"
 import { useAddNode } from "@/components/graph/use-add-node"
 import { useCommandPaletteOpen } from "@/components/graph/use-command-palette-open"
+import { useConnectionAutosnapCandidate } from "@/components/graph/use-connection-autosnap"
 import { useExecutionMonitor } from "@/components/graph/use-execution-monitor"
 import { useGraphConnections } from "@/components/graph/use-graph-connections"
 import { useGraphShortcuts } from "@/components/graph/use-graph-shortcuts"
 import { useNodeCatalog } from "@/components/graph/use-node-catalog"
 import { useQueuePrompt } from "@/components/graph/use-queue-prompt"
 import { useWorkflowPersistence } from "@/components/graph/use-workflow-persistence"
+import type { NodeSchemaMap } from "@/lib/comfy/objectInfo"
+
+type ConnectionAutosnapControllerProps = {
+  isConnectionValid: (connection: Connection | Edge) => boolean
+  nodeSchemas: NodeSchemaMap
+  onCandidateChange: (candidate: Connection | null) => void
+}
+
+const ConnectionAutosnapController = ({
+  isConnectionValid,
+  nodeSchemas,
+  onCandidateChange,
+}: ConnectionAutosnapControllerProps) => {
+  const preview = useConnectionAutosnapCandidate({
+    isConnectionValid,
+    nodeSchemas,
+  })
+
+  React.useEffect(() => {
+    onCandidateChange(preview?.connection ?? null)
+  }, [onCandidateChange, preview])
+  return null
+}
 
 export function ComfyFlowCanvas() {
   const { open: commandOpen, setOpen: setCommandOpen } = useCommandPaletteOpen()
@@ -76,6 +108,92 @@ export function ComfyFlowCanvas() {
     setEdges,
   })
 
+  const autosnapCandidateRef = React.useRef<Connection | null>(null)
+
+  const handleAutosnapCandidate = React.useCallback(
+    (candidate: Connection | null) => {
+      autosnapCandidateRef.current = candidate
+    },
+    [],
+  )
+
+  const handleConnectEnd = React.useCallback(
+    (
+      _event: MouseEvent | TouchEvent,
+      connectionState: FinalConnectionState,
+    ) => {
+      if (connectionState?.toHandle && connectionState?.isValid) {
+        return
+      }
+      const candidate = autosnapCandidateRef.current
+      if (candidate) {
+        handleConnect(candidate)
+      }
+    },
+    [handleConnect],
+  )
+
+  const AutosnapConnectionLine = React.useMemo(() => {
+    const ConnectionLine = ({
+      connectionLineStyle,
+      connectionLineType,
+      fromX,
+      fromY,
+      toX,
+      toY,
+      fromPosition,
+      toPosition,
+    }: ConnectionLineComponentProps<CanvasNode>) => {
+      const preview = useConnectionAutosnapCandidate({
+        isConnectionValid,
+        nodeSchemas,
+      })
+      const targetX = preview?.to.x ?? toX
+      const targetY = preview?.to.y ?? toY
+      const targetPosition = preview?.toPosition ?? toPosition
+      const adjustedTargetY =
+        Math.abs(targetY - fromY) < 0.5 ? targetY + 0.5 : targetY
+      const pathParams = {
+        sourceX: fromX,
+        sourceY: fromY,
+        sourcePosition: fromPosition,
+        targetX,
+        targetY: adjustedTargetY,
+        targetPosition,
+      }
+      let path = ""
+      switch (connectionLineType) {
+        case ConnectionLineType.Bezier:
+          ;[path] = getBezierPath(pathParams)
+          break
+        case ConnectionLineType.SimpleBezier:
+          ;[path] = getSimpleBezierPath(pathParams)
+          break
+        case ConnectionLineType.Step:
+          ;[path] = getSmoothStepPath({ ...pathParams, borderRadius: 0 })
+          break
+        case ConnectionLineType.SmoothStep:
+          ;[path] = getSmoothStepPath(pathParams)
+          break
+        default:
+          ;[path] = getStraightPath(pathParams)
+      }
+      return (
+        <path
+          d={path}
+          fill="none"
+          stroke="var(--xy-connectionline-stroke, var(--xy-connectionline-stroke-default))"
+          strokeWidth={1}
+          className="react-flow__connection-path"
+          style={connectionLineStyle}
+        />
+      )
+    }
+
+    ConnectionLine.displayName = "AutosnapConnectionLine"
+    return ConnectionLine
+  }, [isConnectionValid, nodeSchemas])
+
   const { addNode } = useAddNode({
     nodeSchemas,
     setNodes,
@@ -120,14 +238,21 @@ export function ComfyFlowCanvas() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={handleConnect}
+            onConnectEnd={handleConnectEnd}
             isValidConnection={isConnectionValid}
             nodeTypes={nodeTypes}
+            connectionLineComponent={AutosnapConnectionLine}
             onInit={(instance) => {
               reactFlowInstanceRef.current = instance
               setIsFlowReady(true)
             }}
             proOptions={{ hideAttribution: true }}
           >
+            <ConnectionAutosnapController
+              isConnectionValid={isConnectionValid}
+              nodeSchemas={nodeSchemas}
+              onCandidateChange={handleAutosnapCandidate}
+            />
             <Background />
             <Controls />
           </ReactFlow>

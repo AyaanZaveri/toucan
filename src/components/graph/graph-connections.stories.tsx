@@ -28,7 +28,10 @@ import {
   type ExecutionState,
   ExecutionStateContext,
 } from "@/components/graph/execution-context"
-import { useConnectionAutosnapCandidate } from "@/components/graph/use-connection-autosnap"
+import {
+  type ConnectionAutosnapPreview,
+  useAutosnapCandidate,
+} from "@/components/graph/use-connection-autosnap"
 import { useGraphConnections } from "@/components/graph/use-graph-connections"
 import type { NodeSchemaMap } from "@/lib/comfy/objectInfo"
 
@@ -116,6 +119,8 @@ const initialNodes: CanvasNode[] = [
 function ConnectionFlow() {
   const [nodes, , onNodesChange] = useNodesState<CanvasNode>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([])
+  const [autosnapPreview, setAutosnapPreview] =
+    React.useState<ConnectionAutosnapPreview | null>(null)
   const autosnapCandidateRef = React.useRef<Connection | null>(null)
 
   const { isConnectionValid, handleConnect } = useGraphConnections({
@@ -159,13 +164,9 @@ function ConnectionFlow() {
       fromPosition,
       toPosition,
     }: ConnectionLineComponentProps<CanvasNode>) => {
-      const preview = useConnectionAutosnapCandidate({
-        isConnectionValid,
-        nodeSchemas,
-      })
-      const targetX = preview?.to.x ?? toX
-      const targetY = preview?.to.y ?? toY
-      const targetPosition = preview?.toPosition ?? toPosition
+      const targetX = autosnapPreview?.to.x ?? toX
+      const targetY = autosnapPreview?.to.y ?? toY
+      const targetPosition = autosnapPreview?.toPosition ?? toPosition
       const adjustedTargetY =
         Math.abs(targetY - fromY) < 0.5 ? targetY + 0.5 : targetY
       const pathParams = {
@@ -207,7 +208,7 @@ function ConnectionFlow() {
 
     ConnectionLine.displayName = "AutosnapConnectionLine"
     return ConnectionLine
-  }, [isConnectionValid])
+  }, [autosnapPreview])
 
   return (
     <div className="h-full w-full">
@@ -228,6 +229,7 @@ function ConnectionFlow() {
           isConnectionValid={isConnectionValid}
           nodeSchemas={nodeSchemas}
           onCandidateChange={handleAutosnapCandidate}
+          onPreviewChange={setAutosnapPreview}
         />
       </ReactFlow>
     </div>
@@ -238,19 +240,22 @@ const ConnectionAutosnapController = ({
   isConnectionValid,
   nodeSchemas,
   onCandidateChange,
+  onPreviewChange,
 }: {
   isConnectionValid: (connection: Connection | Edge) => boolean
   nodeSchemas: NodeSchemaMap
   onCandidateChange: (candidate: Connection | null) => void
+  onPreviewChange: (preview: ConnectionAutosnapPreview | null) => void
 }) => {
-  const preview = useConnectionAutosnapCandidate({
+  const { preview } = useAutosnapCandidate({
     isConnectionValid,
     nodeSchemas,
   })
 
   React.useEffect(() => {
     onCandidateChange(preview?.connection ?? null)
-  }, [onCandidateChange, preview])
+    onPreviewChange(preview ?? null)
+  }, [onCandidateChange, onPreviewChange, preview])
   return null
 }
 

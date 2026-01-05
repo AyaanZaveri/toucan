@@ -443,3 +443,23 @@ export const useConnectionAutosnapCandidate = ({
     }
   }, [connection, isConnectionValid, nodeSchemas, store])
 }
+
+export const useAutosnapCandidate = ({
+  isConnectionValid,
+  nodeSchemas,
+}: UseConnectionAutosnapArgs) => {
+  const preview = useConnectionAutosnapCandidate({
+    isConnectionValid,
+    nodeSchemas,
+  })
+  const candidateRef = React.useRef<Connection | null>(null)
+  const setCandidateRef = React.useCallback((candidate: Connection | null) => {
+    candidateRef.current = candidate
+  }, [])
+
+  React.useEffect(() => {
+    setCandidateRef(preview?.connection ?? null)
+  }, [preview, setCandidateRef])
+
+  return { preview, candidateRef, setCandidateRef }
+}

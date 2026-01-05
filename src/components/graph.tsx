@@ -29,7 +29,10 @@ import { ExecutionStateContext } from "@/components/graph/execution-context"
 import { ExecutionHud } from "@/components/graph/execution-hud"
 import { useAddNode } from "@/components/graph/use-add-node"
 import { useCommandPaletteOpen } from "@/components/graph/use-command-palette-open"
-import { useConnectionAutosnapCandidate } from "@/components/graph/use-connection-autosnap"
+import {
+  type ConnectionAutosnapPreview,
+  useAutosnapCandidate,
+} from "@/components/graph/use-connection-autosnap"
 import { useExecutionMonitor } from "@/components/graph/use-execution-monitor"
 import { useGraphConnections } from "@/components/graph/use-graph-connections"
 import { useGraphShortcuts } from "@/components/graph/use-graph-shortcuts"
@@ -42,21 +45,24 @@ type ConnectionAutosnapControllerProps = {
   isConnectionValid: (connection: Connection | Edge) => boolean
   nodeSchemas: NodeSchemaMap
   onCandidateChange: (candidate: Connection | null) => void
+  onPreviewChange: (preview: ConnectionAutosnapPreview | null) => void
 }
 
 const ConnectionAutosnapController = ({
   isConnectionValid,
   nodeSchemas,
   onCandidateChange,
+  onPreviewChange,
 }: ConnectionAutosnapControllerProps) => {
-  const preview = useConnectionAutosnapCandidate({
+  const { preview } = useAutosnapCandidate({
     isConnectionValid,
     nodeSchemas,
   })
 
   React.useEffect(() => {
     onCandidateChange(preview?.connection ?? null)
-  }, [onCandidateChange, preview])
+    onPreviewChange(preview ?? null)
+  }, [onCandidateChange, onPreviewChange, preview])
   return null
 }
 
@@ -108,14 +114,9 @@ export function ComfyFlowCanvas() {
     setEdges,
   })
 
+  const [autosnapPreview, setAutosnapPreview] =
+    React.useState<ConnectionAutosnapPreview | null>(null)
   const autosnapCandidateRef = React.useRef<Connection | null>(null)
-
-  const handleAutosnapCandidate = React.useCallback(
-    (candidate: Connection | null) => {
-      autosnapCandidateRef.current = candidate
-    },
-    [],
-  )
 
   const handleConnectEnd = React.useCallback(
     (
@@ -144,13 +145,9 @@ export function ComfyFlowCanvas() {
       fromPosition,
       toPosition,
     }: ConnectionLineComponentProps<CanvasNode>) => {
-      const preview = useConnectionAutosnapCandidate({
-        isConnectionValid,
-        nodeSchemas,
-      })
-      const targetX = preview?.to.x ?? toX
-      const targetY = preview?.to.y ?? toY
-      const targetPosition = preview?.toPosition ?? toPosition
+      const targetX = autosnapPreview?.to.x ?? toX
+      const targetY = autosnapPreview?.to.y ?? toY
+      const targetPosition = autosnapPreview?.toPosition ?? toPosition
       const adjustedTargetY =
         Math.abs(targetY - fromY) < 0.5 ? targetY + 0.5 : targetY
       const pathParams = {
@@ -192,7 +189,7 @@ export function ComfyFlowCanvas() {
 
     ConnectionLine.displayName = "AutosnapConnectionLine"
     return ConnectionLine
-  }, [isConnectionValid, nodeSchemas])
+  }, [autosnapPreview])
 
   const { addNode } = useAddNode({
     nodeSchemas,
@@ -251,7 +248,10 @@ export function ComfyFlowCanvas() {
             <ConnectionAutosnapController
               isConnectionValid={isConnectionValid}
               nodeSchemas={nodeSchemas}
-              onCandidateChange={handleAutosnapCandidate}
+              onCandidateChange={(candidate) => {
+                autosnapCandidateRef.current = candidate
+              }}
+              onPreviewChange={setAutosnapPreview}
             />
             <Background />
             <Controls />

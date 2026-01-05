@@ -125,6 +125,25 @@
 }
 
 .react-flow__handle.comfy-handle {
+  width: 18px;
+  height: 18px;
+  background-color: transparent;
+  border: none;
+}
+
+.react-flow__handle.comfy-handle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: 10px;
   height: 10px;
+  transform: translate(-50%, -50%);
+  background-color: var(
+    --xy-handle-background-color,
+    var(--xy-handle-background-color-default)
+  );
+  border: 1px solid
+    var(--xy-handle-border-color, var(--xy-handle-border-color-default));
+  border-radius: 100%;
 }

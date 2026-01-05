@@ -2,8 +2,8 @@ import * as React from "react"
 import type {
   ExecutionState,
   FileOutput,
-  NodeOutput,
   NodeExecutionStatus,
+  NodeOutput,
 } from "@/components/graph/execution-context"
 import { getComfyClientId } from "@/lib/comfy/client-id"
 import { interruptPrompt } from "@/lib/comfy/inference"

@@ -130,6 +130,7 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
       : null
   const badgeBase =
     "inline-flex items-center justify-center rounded text-[10px] font-semibold leading-none"
+  const outputInteractionClassName = "rf-no-pan rf-no-drag"
 
   const statusBadge = (() => {
     if (nodeStatus === "cached") {
@@ -327,7 +328,10 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
             Output
           </div>
           {outputImageItems.length > 1 ? (
-            <Carousel className="mt-2" opts={{ align: "start" }}>
+            <Carousel
+              className={cn("mt-2", outputInteractionClassName)}
+              opts={{ align: "start" }}
+            >
               <CarouselContent className="ml-0">
                 {outputImageItems.map((item) => (
                   <CarouselItem key={item.key} className="pl-0">
@@ -347,7 +351,9 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
               />
             </Carousel>
           ) : (
-            <div className="mt-2">{outputImageItems[0]?.content}</div>
+            <div className={cn("mt-2", outputInteractionClassName)}>
+              {outputImageItems[0]?.content}
+            </div>
           )}
         </div>
       ) : null}

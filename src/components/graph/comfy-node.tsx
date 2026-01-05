@@ -7,6 +7,7 @@ import {
   Position,
   useReactFlow,
 } from "@xyflow/react"
+import Image from "next/image"
 import * as React from "react"
 import { API_BASE, HANDLE_OFFSET } from "@/components/graph/constants"
 import { ExecutionStateContext } from "@/components/graph/execution-context"
@@ -14,13 +15,6 @@ import {
   renderControlAfterGenerateWidget,
   renderNodeWidget,
 } from "@/components/graph/node-widgets"
-import type { WidgetControlValue } from "@/lib/comfy/control-after-generate"
-import {
-  getWidgetSpec,
-  type NodeSchemaMap,
-  type WidgetValue,
-} from "@/lib/comfy/objectInfo"
-import { buildViewUrl } from "@/lib/comfy/view-url"
 import {
   Carousel,
   CarouselContent,
@@ -28,6 +22,13 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import type { WidgetControlValue } from "@/lib/comfy/control-after-generate"
+import {
+  getWidgetSpec,
+  type NodeSchemaMap,
+  type WidgetValue,
+} from "@/lib/comfy/objectInfo"
+import { buildViewUrl } from "@/lib/comfy/view-url"
 import { cn } from "@/lib/utils"
 
 export type ComfyNodeData = {
@@ -92,19 +93,24 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
     if (!displayUrl) {
       return []
     }
+    const itemKey = `${image.filename}-${index}`
     const imageElement = (
-      <img
+      <Image
+        key={`${itemKey}-image`}
         src={displayUrl}
         alt={`Output ${index + 1}`}
         className="block h-24 w-full object-contain"
+        width={320}
+        height={96}
         loading="lazy"
         decoding="async"
+        unoptimized
       />
     )
-    const containerClassName =
-      "overflow-hidden rounded-md bg-slate-50"
+    const containerClassName = "overflow-hidden rounded-md bg-slate-50"
     const content = fullUrl ? (
       <a
+        key={`${itemKey}-link`}
         href={fullUrl}
         target="_blank"
         rel="noreferrer"
@@ -113,9 +119,11 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
         {imageElement}
       </a>
     ) : (
-      <div className={containerClassName}>{imageElement}</div>
+      <div key={`${itemKey}-container`} className={containerClassName}>
+        {imageElement}
+      </div>
     )
-    return [{ key: `${image.filename}-${index}`, content }]
+    return [{ key: itemKey, content }]
   })
   const progressPercent =
     nodeProgress && nodeProgress.max > 0
@@ -328,8 +336,16 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious className="left-2" size="icon-sm" variant="outline" />
-              <CarouselNext className="right-2" size="icon-sm" variant="outline" />
+              <CarouselPrevious
+                className="left-2"
+                size="icon-sm"
+                variant="outline"
+              />
+              <CarouselNext
+                className="right-2"
+                size="icon-sm"
+                variant="outline"
+              />
             </Carousel>
           ) : (
             <div className="mt-2">{outputImageItems[0]?.content}</div>

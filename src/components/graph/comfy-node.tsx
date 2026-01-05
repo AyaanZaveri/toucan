@@ -9,7 +9,7 @@ import {
 } from "@xyflow/react"
 import Image from "next/image"
 import * as React from "react"
-import { API_BASE, HANDLE_OFFSET } from "@/components/graph/constants"
+import { API_BASE, HANDLE_EDGE_OFFSET } from "@/components/graph/constants"
 import { ExecutionStateContext } from "@/components/graph/execution-context"
 import {
   renderControlAfterGenerateWidget,
@@ -256,7 +256,8 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                       type="target"
                       position={Position.Left}
                       id={`in-${slot.name}`}
-                      style={{ left: -HANDLE_OFFSET }}
+                      className="comfy-handle"
+                      style={{ left: -HANDLE_EDGE_OFFSET }}
                     />
                     <span className="pl-2" title={slot.tooltip}>
                       {displayName}
@@ -276,7 +277,8 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                     type="source"
                     position={Position.Right}
                     id={`out-${slot.name}`}
-                    style={{ right: -HANDLE_OFFSET }}
+                    className="comfy-handle"
+                    style={{ right: -HANDLE_EDGE_OFFSET }}
                   />
                 </div>
               ))}
@@ -296,7 +298,8 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                       type="target"
                       position={Position.Left}
                       id={`in-${slot.name}`}
-                      style={{ left: -HANDLE_OFFSET }}
+                      className="comfy-handle"
+                      style={{ left: -HANDLE_EDGE_OFFSET }}
                     />
                     <span className="pl-2" title={slot.tooltip}>
                       {displayName}

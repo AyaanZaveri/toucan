@@ -1,6 +1,6 @@
 import "@xyflow/react/dist/style.css"
-import { ComfyFlowCanvas } from "@/components/graph"
+import { EditorPage } from "@/components/editor/editor-page"
 
 export default function Home() {
-  return <ComfyFlowCanvas />
+  return <EditorPage />
 }

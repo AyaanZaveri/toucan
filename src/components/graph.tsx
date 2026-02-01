@@ -5,7 +5,6 @@ import {
   type Connection,
   type ConnectionLineComponentProps,
   ConnectionLineType,
-  Controls,
   type Edge,
   type FinalConnectionState,
   getBezierPath,
@@ -27,6 +26,7 @@ import { CommandPalette } from "@/components/graph/command-palette"
 import { API_BASE } from "@/components/graph/constants"
 import { ExecutionStateContext } from "@/components/graph/execution-context"
 import { ExecutionHud } from "@/components/graph/execution-hud"
+import { GraphControls } from "@/components/graph/graph-controls"
 import { useAddNode } from "@/components/graph/use-add-node"
 import { useCommandPaletteOpen } from "@/components/graph/use-command-palette-open"
 import {
@@ -254,7 +254,7 @@ export function ComfyFlowCanvas() {
               onPreviewChange={setAutosnapPreview}
             />
             <Background />
-            <Controls />
+            <GraphControls />
           </ReactFlow>
           <ExecutionHud
             phase={executionState.phase}

@@ -106,7 +106,7 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
         decoding="async"
       />
     )
-    const containerClassName = "overflow-hidden rounded-md bg-slate-50"
+    const containerClassName = "overflow-hidden rounded-md bg-muted"
     const content = fullUrl ? (
       <a
         key={`${itemKey}-link`}
@@ -136,7 +136,10 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
     if (nodeStatus === "cached") {
       return (
         <span
-          className={cn(badgeBase, "bg-slate-100 px-1.5 py-0.5 text-slate-500")}
+          className={cn(
+            badgeBase,
+            "bg-muted px-1.5 py-0.5 text-muted-foreground",
+          )}
         >
           CACHED
         </span>
@@ -144,14 +147,19 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
     }
     if (nodeStatus === "completed") {
       return (
-        <span className={cn(badgeBase, "h-4 w-4 text-slate-400")}>
+        <span className={cn(badgeBase, "h-4 w-4 text-muted-foreground")}>
           <CheckIcon className="h-3 w-3" />
         </span>
       )
     }
     if (nodeStatus === "error") {
       return (
-        <span className={cn(badgeBase, "bg-red-50 px-1.5 py-0.5 text-red-600")}>
+        <span
+          className={cn(
+            badgeBase,
+            "bg-red-50 px-1.5 py-0.5 text-red-600 dark:bg-red-950 dark:text-red-400",
+          )}
+        >
           ERR
         </span>
       )
@@ -159,7 +167,10 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
     if (nodeStatus === "interrupted") {
       return (
         <span
-          className={cn(badgeBase, "bg-amber-50 px-1.5 py-0.5 text-amber-600")}
+          className={cn(
+            badgeBase,
+            "bg-amber-50 px-1.5 py-0.5 text-amber-600 dark:bg-amber-950 dark:text-amber-400",
+          )}
         >
           STOP
         </span>
@@ -227,9 +238,9 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
   return (
     <div
       className={cn(
-        "relative min-w-[200px] rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs shadow-sm",
+        "relative min-w-[200px] rounded-lg border border-border bg-card px-4 py-3 text-xs shadow-sm",
         nodeStatus === "running" &&
-          "ring-2 ring-sky-400 ring-offset-2 ring-offset-white",
+          "ring-2 ring-sky-400 ring-offset-2 ring-offset-background",
         nodeStatus === "error" && "border-red-300 ring-1 ring-red-200",
         nodeStatus === "interrupted" &&
           "border-amber-300 ring-1 ring-amber-200",
@@ -239,10 +250,10 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
       {statusBadge ? (
         <div className="absolute right-2 top-2">{statusBadge}</div>
       ) : null}
-      <div className="text-sm font-semibold text-slate-900">
+      <div className="text-sm font-semibold text-card-foreground">
         {schema?.displayName ?? data.label}
       </div>
-      <div className="mt-3 flex flex-col gap-3 text-slate-600">
+      <div className="mt-3 flex flex-col gap-3 text-muted-foreground">
         {inputSlotsWithoutWidgets.length > 0 || outputSlots.length > 0 ? (
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4">
             <div className="flex min-w-0 flex-col gap-1">
@@ -259,7 +270,7 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                       className="comfy-handle"
                       style={{ left: -HANDLE_EDGE_OFFSET }}
                     />
-                    <span className="pl-2" title={slot.tooltip}>
+                    <span className="pl-4" title={slot.tooltip}>
                       {displayName}
                     </span>
                   </div>
@@ -272,7 +283,7 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                   key={`out-${slot.name}`}
                   className="relative flex min-h-5 items-center justify-end"
                 >
-                  <span className="pr-2">{slot.name}</span>
+                  <span className="pr-4">{slot.name}</span>
                   <Handle
                     type="source"
                     position={Position.Right}
@@ -301,7 +312,7 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
                       className="comfy-handle"
                       style={{ left: -HANDLE_EDGE_OFFSET }}
                     />
-                    <span className="pl-2" title={slot.tooltip}>
+                    <span className="pl-4" title={slot.tooltip}>
                       {displayName}
                     </span>
                   </div>
@@ -318,16 +329,16 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
         ) : null}
       </div>
       {progressPercent !== null ? (
-        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+        <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-slate-400"
+            className="h-full rounded-full bg-muted-foreground"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       ) : null}
       {outputImageItems.length > 0 ? (
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             Output
           </div>
           {outputImageItems.length > 1 ? (

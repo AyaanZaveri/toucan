@@ -9,3 +9,9 @@ prs are great too. some helpful resources:
 - https://google.github.io/eng-practices/review/developer/
 
 anything helps. follow first principles thinking.
+
+## Code Guidelines
+
+NO TESTS. This is a production application.
+
+MINIMAL COMMENTS. Only add comments when the code logic is genuinely complex or non-obvious. Self-documenting code is preferred.

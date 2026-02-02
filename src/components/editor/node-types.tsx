@@ -19,11 +19,15 @@ import type {
   SettingsNodeData,
 } from "@/lib/graph-converter"
 import type { WorkflowNodeData } from "@/lib/workflows/converter"
+import { useNodeDataUpdate } from "@/components/editor/node-data-context"
 
 /**
  * ComfyUI Node - displays inputs and outputs with handles
  */
 export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
+  // Get node data update function
+  const updateNodeData = useNodeDataUpdate()
+
   // Get connection state using the useConnection hook
   const connection = useConnection()
 
@@ -98,7 +102,7 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
   }
 
   return (
-    <div className="shadow-lg shadow-accent/50 rounded-lg bg-card border border-border min-w-[200px] max-w-[400px]">
+    <div className="shadow-2xl shadow-accent/25 rounded-lg bg-card border border-border min-w-[200px] max-w-[400px]">
       {/* Node Header */}
       <div className="px-3 py-2 bg-muted border-b border-border rounded-t-lg">
         <div className="font-semibold text-sm text-card-foreground">
@@ -158,7 +162,26 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
                       </div>
                     </div>
                     <Textarea
-                      defaultValue={String(widgetValue)}
+                      value={String(widgetValue ?? "")}
+                      onChange={(e) => {
+                        const newValue = e.target.value
+                        const existingWidgetValues =
+                          data.widgetValues &&
+                          typeof data.widgetValues === "object" &&
+                          !Array.isArray(data.widgetValues)
+                            ? data.widgetValues
+                            : {}
+                        
+                        // Debug log to confirm updates
+                        console.log(`[Widget Update] Node ${id}, ${input.name}:`, newValue)
+                        
+                        updateNodeData(id, {
+                          widgetValues: {
+                            ...existingWidgetValues,
+                            [input.name]: newValue,
+                          },
+                        })
+                      }}
                       className="text-xs resize-none mt-2"
                     />
                   </div>
@@ -166,6 +189,10 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
               }
 
               if (showDropdown) {
+                // TODO: Add proper COMBO options list from ComfyUI objectInfo
+                // For now, wire up the onChange handler for when options are available
+                const comboOptions = (input as any).widget?.values ? [(input as any).widget.values] : [widgetValue]
+                
                 return (
                   <div key={`input-${idx}`} className="relative">
                     <Handle
@@ -185,9 +212,31 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
                         {String(widgetValue)}
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem>
-                          {String(widgetValue)}
-                        </DropdownMenuItem>
+                        {comboOptions.map((option, optIdx) => (
+                          <DropdownMenuItem
+                            key={optIdx}
+                            onSelect={() => {
+                              const existingWidgetValues =
+                                data.widgetValues &&
+                                typeof data.widgetValues === "object" &&
+                                !Array.isArray(data.widgetValues)
+                                  ? data.widgetValues
+                                  : {}
+                              
+                              // Debug log to confirm updates
+                              console.log(`[Widget Update] Node ${id}, ${input.name}:`, option)
+                              
+                              updateNodeData(id, {
+                                widgetValues: {
+                                  ...existingWidgetValues,
+                                  [input.name]: option,
+                                },
+                              })
+                            }}
+                          >
+                            {String(option)}
+                          </DropdownMenuItem>
+                        ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

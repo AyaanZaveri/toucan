@@ -68,7 +68,7 @@ export function TabsHeader({
     >
       <TabsList
         variant="line"
-        className="w-full justify-start rounded-none !pt-0 !h-10 border-b"
+        className="w-full justify-start rounded-none !pt-0 !h-10 border-b gap-0"
       >
         {tabs.map((tab) => (
           <TabsTrigger key={tab.id} value={tab.id} className="hover:bg-accent">

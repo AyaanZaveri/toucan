@@ -1,5 +1,5 @@
 import type { Edge, Node } from "@xyflow/react"
-import { convertWorkflowToFlow } from "./workflows/converter"
+import { convertWorkflowToFlow, type WorkflowNodeData } from "./workflows/converter"
 import type { WorkflowDefinition } from "./workflows/types"
 
 /**
@@ -26,7 +26,7 @@ export interface PromptNodeData extends BaseNodeData {
  */
 export function parseJsonToReactFlow(
   jsonString: string,
-): { nodes: Node[]; edges: Edge[] } | { error: string } {
+): { nodes: Node<WorkflowNodeData>[]; edges: Edge[] } | { error: string } {
   try {
     const parsed = JSON.parse(jsonString)
 

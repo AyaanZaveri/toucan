@@ -5,10 +5,10 @@ import {
   type Node,
   type NodeProps,
   Position,
-  useReactFlow,
 } from "@xyflow/react"
 import Image from "next/image"
 import * as React from "react"
+import { useNodeDataUpdate } from "@/components/editor/node-data-context"
 import { API_BASE, HANDLE_EDGE_OFFSET } from "@/components/graph/constants"
 import { ExecutionStateContext } from "@/components/graph/execution-context"
 import {
@@ -61,7 +61,7 @@ const CheckIcon = ({ className }: { className?: string }) => (
 )
 
 export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
-  const { updateNodeData } = useReactFlow<CanvasNode>()
+  const updateNodeData = useNodeDataUpdate()
   const nodeSchemas = React.useContext(NodeSchemaContext)
   const executionState = React.useContext(ExecutionStateContext)
   const schema = nodeSchemas[data.nodeType]
@@ -181,26 +181,26 @@ export function ComfyNode({ data, id }: NodeProps<ComfyFlowNode>) {
 
   const handleWidgetChange = React.useCallback(
     (slotName: string, value: WidgetValue) => {
-      updateNodeData(id, (node) => ({
+      updateNodeData(id, {
         widgetValues: {
-          ...(node.data.widgetValues ?? {}),
+          ...(data.widgetValues ?? {}),
           [slotName]: value,
         },
-      }))
+      })
     },
-    [id, updateNodeData],
+    [id, updateNodeData, data.widgetValues],
   )
 
   const handleControlChange = React.useCallback(
     (slotName: string, value: WidgetControlValue) => {
-      updateNodeData(id, (node) => ({
+      updateNodeData(id, {
         widgetControlValues: {
-          ...(node.data.widgetControlValues ?? {}),
+          ...(data.widgetControlValues ?? {}),
           [slotName]: value,
         },
-      }))
+      })
     },
-    [id, updateNodeData],
+    [id, updateNodeData, data.widgetControlValues],
   )
 
   const inputSlotsWithWidgets = []

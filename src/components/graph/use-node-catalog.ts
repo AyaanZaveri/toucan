@@ -28,7 +28,7 @@ export const useNodeCatalog = (): NodeCatalogState => {
       setError(null)
 
       try {
-        const response = await fetch(`${API_BASE}/object_info`, {
+        const response = await fetch(`${API_BASE}/api/object_info`, {
           cache: "no-store",
           signal: controller.signal,
         })

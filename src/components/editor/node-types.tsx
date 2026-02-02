@@ -119,18 +119,14 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
                 (input as any).link !== undefined
 
               // Widget values are only for inputs that have a widget property AND no link
-              const inputsWithWidgetsBefore = data.inputs
-                .slice(0, idx)
-                .filter((inp: any) => inp.widget)
-              const widgetIndex = inputsWithWidgetsBefore.length
               const hasWidget = (input as any).widget !== undefined
               const widgetValue =
                 hasWidget &&
                 !hasLink &&
                 data.widgetValues &&
-                widgetIndex >= 0 &&
-                widgetIndex < data.widgetValues.length
-                  ? data.widgetValues[widgetIndex]
+                typeof data.widgetValues === "object" &&
+                !Array.isArray(data.widgetValues)
+                  ? data.widgetValues[input.name]
                   : undefined
 
               const inputType = input.type?.toLowerCase()
@@ -226,37 +222,38 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
         )}
 
         {/* Widget Values - only show for non-text/non-combo inputs */}
-        {data.widgetValues && data.widgetValues.length > 0 && (
-          <div className="mt-2">
-            {data.widgetValues.map((value, widgetIdx) => {
-              // Find which input this widget belongs to
-              // Widget values correspond to inputs that have a widget property
-              const inputsWithWidgets =
-                data.inputs?.filter((inp: any) => inp.widget) || []
-              const correspondingInput = inputsWithWidgets[widgetIdx]
+        {data.widgetValues &&
+          typeof data.widgetValues === "object" &&
+          !Array.isArray(data.widgetValues) && (
+            <div className="mt-2">
+              {Object.entries(data.widgetValues).map(([inputName, value]) => {
+                // Find which input this widget belongs to
+                const correspondingInput = data.inputs?.find(
+                  (inp: any) => inp.name === inputName && inp.widget,
+                )
 
-              if (!correspondingInput) return null
+                if (!correspondingInput) return null
 
-              const inputType = correspondingInput.type?.toLowerCase()
-              const isTextInput = inputType === "string"
-              const isComboInput = inputType === "combo"
-              if (isTextInput || isComboInput) return null
+                const inputType = correspondingInput.type?.toLowerCase()
+                const isTextInput = inputType === "string"
+                const isComboInput = inputType === "combo"
+                if (isTextInput || isComboInput) return null
 
-              return (
-                <div
-                  key={`widget-${widgetIdx}`}
-                  className="text-xs text-muted-foreground truncate"
-                >
-                  {typeof value === "string"
-                    ? value.length > 50
-                      ? `${value.slice(0, 50)}...`
-                      : value
-                    : JSON.stringify(value)}
-                </div>
-              )
-            })}
-          </div>
-        )}
+                return (
+                  <div
+                    key={`widget-${inputName}`}
+                    className="text-xs text-muted-foreground truncate"
+                  >
+                    {typeof value === "string"
+                      ? value.length > 50
+                        ? `${value.slice(0, 50)}...`
+                        : value
+                      : JSON.stringify(value)}
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
         {/* Outputs */}
         {data.outputs && data.outputs.length > 0 && (

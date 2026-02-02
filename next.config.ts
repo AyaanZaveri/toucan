@@ -3,8 +3,8 @@ import type { NextConfig } from "next"
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  // output and images are what they are because we will support SSR later
-  output: "export",
+  // Removed output: "export" to enable server-side features (API routes/proxy)
+  // Keep images unoptimized for now
   images: { unoptimized: true },
 }
 

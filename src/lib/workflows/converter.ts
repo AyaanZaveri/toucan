@@ -1,5 +1,5 @@
 import type { Edge, Node } from "@xyflow/react"
-import type { WorkflowDefinition, WorkflowNode } from "./types"
+import type { WorkflowDefinition, WorkflowNode, WorkflowLink } from "./types"
 
 /**
  * Custom data type for workflow nodes in React Flow
@@ -14,7 +14,7 @@ export interface WorkflowNodeData extends Record<string, unknown> {
     link?: number | null
   }>
   outputs: Array<{ name: string; type: string }>
-  widgetValues: unknown[]
+  widgetValues: unknown[] | Record<string, unknown>
   properties: Record<string, unknown>
 }
 
@@ -27,6 +27,16 @@ export type WorkflowFlowNode = Node<WorkflowNodeData, "workflow">
  * Converts a ComfyUI workflow node to a React Flow node
  */
 function convertNodeToFlowNode(node: WorkflowNode): WorkflowFlowNode {
+  // Convert widgetValues array to a Record keyed by input name
+  const widgetValuesRecord: Record<string, unknown> = {}
+  let widgetIndex = 0
+  for (const input of node.inputs) {
+    if (input.widget && widgetIndex < node.widgets_values.length) {
+      widgetValuesRecord[input.name] = node.widgets_values[widgetIndex]
+      widgetIndex++
+    }
+  }
+
   return {
     id: node.id.toString(),
     type: "workflow",
@@ -47,7 +57,7 @@ function convertNodeToFlowNode(node: WorkflowNode): WorkflowFlowNode {
         name: output.name,
         type: output.type,
       })),
-      widgetValues: node.widgets_values,
+      widgetValues: widgetValuesRecord,
       properties: node.properties,
     },
     width: node.size[0],
@@ -145,4 +155,146 @@ export function getInitialViewport(definition: WorkflowDefinition): {
     y: 0,
     zoom: 1,
   }
+}
+
+/**
+ * Converts ReactFlow graph state back to ComfyUI WorkflowDefinition
+ * This is the inverse of convertWorkflowToFlow
+ *
+ * @param baseWorkflow - The original loaded workflow (used as template)
+ * @param flowNodes - Current ReactFlow nodes
+ * @param flowEdges - Current ReactFlow edges
+ * @returns Updated WorkflowDefinition with current graph state
+ */
+export function buildWorkflowFromFlow(
+  baseWorkflow: WorkflowDefinition,
+  flowNodes: Node<WorkflowNodeData>[],
+  flowEdges: Edge[],
+): WorkflowDefinition {
+  // Clone the base workflow to avoid mutations
+  const workflow = structuredClone(baseWorkflow)
+
+  // Create a map of flow nodes by ID for quick lookup
+  const flowNodeMap = new Map(flowNodes.map((node) => [node.id, node]))
+
+  // Build a map to track new link IDs
+  let nextLinkId = workflow.last_link_id + 1
+  const edgeLinkMap = new Map<string, number>() // edge.id -> linkId
+
+  // First, try to preserve existing link IDs where possible
+  for (const edge of flowEdges) {
+    // Check if this edge corresponds to an existing link
+    const edgeIdMatch = edge.id.match(/^e(\d+)$/)
+    if (edgeIdMatch) {
+      const existingLinkId = Number.parseInt(edgeIdMatch[1], 10)
+      edgeLinkMap.set(edge.id, existingLinkId)
+      nextLinkId = Math.max(nextLinkId, existingLinkId + 1)
+    }
+  }
+
+  // Assign new link IDs to edges without existing IDs
+  for (const edge of flowEdges) {
+    if (!edgeLinkMap.has(edge.id)) {
+      edgeLinkMap.set(edge.id, nextLinkId++)
+    }
+  }
+
+  // Build the new links array
+  const newLinks: WorkflowLink[] = []
+  for (const edge of flowEdges) {
+    const linkId = edgeLinkMap.get(edge.id)!
+    const fromNodeId = Number.parseInt(edge.source, 10)
+    const toNodeId = Number.parseInt(edge.target, 10)
+
+    // Extract output and input indices from handles
+    // Handle format: "nodeId-output-idx" or "nodeId-input-idx"
+    const sourceHandleParts = (edge.sourceHandle ?? "").split("-")
+    const targetHandleParts = (edge.targetHandle ?? "").split("-")
+    const fromOutputIndex = Number.parseInt(sourceHandleParts.pop() ?? "-1", 10)
+    const toInputIndex = Number.parseInt(targetHandleParts.pop() ?? "-1", 10)
+
+    if (fromOutputIndex < 0 || toInputIndex < 0) {
+      console.warn(`Invalid edge handle indices for edge ${edge.id}`)
+      continue
+    }
+
+    // Get the type from the source node's output
+    const sourceFlowNode = flowNodeMap.get(edge.source)
+    const linkType =
+      sourceFlowNode?.data.outputs?.[fromOutputIndex]?.type ?? "*"
+
+    newLinks.push([
+      linkId,
+      fromNodeId,
+      fromOutputIndex,
+      toNodeId,
+      toInputIndex,
+      linkType,
+    ])
+  }
+
+  // Update the workflow's links array
+  workflow.links = newLinks
+  workflow.last_link_id = nextLinkId - 1
+
+  // Update each node
+  for (const workflowNode of workflow.nodes) {
+    const flowNode = flowNodeMap.get(workflowNode.id.toString())
+    if (!flowNode) continue
+
+    // Update position
+    workflowNode.pos = [flowNode.position.x, flowNode.position.y]
+
+    // Update widget values
+    // flowNode.data.widgetValues is a Record<string, unknown>
+    // workflowNode.widgets_values is an array
+    // We need to rebuild the array in the correct order based on inputs with widgets
+    const widgetValues = flowNode.data.widgetValues ?? {}
+    const orderedValues: unknown[] = []
+    
+    for (const input of workflowNode.inputs) {
+      if (input.widget) {
+        // If widgetValues is a Record, get value by input name
+        if (!Array.isArray(widgetValues)) {
+          const value = widgetValues[input.name]
+          orderedValues.push(value !== undefined ? value : null)
+        } else {
+          // Fallback: if somehow still an array, use index
+          orderedValues.push(widgetValues[orderedValues.length] ?? null)
+        }
+      }
+    }
+    workflowNode.widgets_values = orderedValues
+
+    // Clear existing input links
+    for (const input of workflowNode.inputs) {
+      input.link = null
+    }
+
+    // Clear existing output links
+    for (const output of workflowNode.outputs) {
+      output.links = []
+    }
+  }
+
+  // Update input and output links based on the new links array
+  for (const link of newLinks) {
+    const [linkId, fromNodeId, fromOutputIndex, toNodeId, toInputIndex] = link
+
+    const targetNode = workflow.nodes.find((n) => n.id === toNodeId)
+    const sourceNode = workflow.nodes.find((n) => n.id === fromNodeId)
+
+    if (targetNode?.inputs[toInputIndex]) {
+      targetNode.inputs[toInputIndex].link = linkId
+    }
+
+    if (sourceNode?.outputs[fromOutputIndex]) {
+      if (!sourceNode.outputs[fromOutputIndex].links) {
+        sourceNode.outputs[fromOutputIndex].links = []
+      }
+      sourceNode.outputs[fromOutputIndex].links!.push(linkId)
+    }
+  }
+
+  return workflow
 }

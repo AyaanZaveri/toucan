@@ -1,14 +1,27 @@
 "use client"
 
 import type { Edge, Node } from "@xyflow/react"
+import {
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
+  type Connection,
+  type EdgeChange,
+  type NodeChange,
+} from "@xyflow/react"
 import { useCallback, useEffect, useState } from "react"
 import { AppSidebar } from "@/components/editor/app-sidebar"
 import { FlowCanvas } from "@/components/editor/flow-canvas"
+import { NodeDataUpdateProvider } from "@/components/editor/node-data-context"
 import { TabsHeader } from "@/components/editor/tabs-header"
 import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { parseJsonToReactFlow } from "@/lib/graph-converter"
 import { getWorkflowByPath, getWorkflowList } from "@/lib/workflows/actions"
+import {
+  buildWorkflowFromFlow,
+  type WorkflowNodeData,
+} from "@/lib/workflows/converter"
 import type {
   WorkflowDefinition,
   WorkflowFileInfo,
@@ -18,7 +31,7 @@ export interface OpenTab {
   id: string
   title: string
   fileRef: { path: string; name: string }
-  graph: { nodes: Node[]; edges: Edge[] } | null
+  graph: { nodes: Node<WorkflowNodeData>[]; edges: Edge[] } | null
   parseError?: string
   hasUnsavedChanges?: boolean
   originalWorkflow?: WorkflowDefinition
@@ -31,15 +44,18 @@ export function EditorPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [allWorkflows, setAllWorkflows] = useState<WorkflowFileInfo[]>([])
 
+  // Load workspace files only once on mount
   useEffect(() => {
     loadWorkspaceFiles()
-  }, [loadWorkspaceFiles])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSave = useCallback(async () => {
     const activeTab = tabs.find((tab) => tab.id === activeTabId)
     if (
       !activeTab ||
       !activeTab.originalWorkflow ||
+      !activeTab.graph ||
       !activeTab.hasUnsavedChanges ||
       isSaving
     ) {
@@ -48,21 +64,26 @@ export function EditorPage() {
 
     setIsSaving(true)
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_COMFY_API_BASE_URL || "http://127.0.0.1:8188"
       const fullPath = `workflows/${activeTab.fileRef.name}`
       const encodedPath = encodeURIComponent(fullPath)
-      const url = `${baseUrl}/api/userdata/${encodedPath}?overwrite=true&full_info=true`
+      const url = `/comfy/api/userdata/${encodedPath}?overwrite=true&full_info=true`
+
+      // Build the current workflow from the ReactFlow state
+      const currentWorkflow = buildWorkflowFromFlow(
+        activeTab.originalWorkflow,
+        activeTab.graph.nodes,
+        activeTab.graph.edges,
+      )
 
       console.log("[handleSave] Saving to:", url)
-      console.log("[handleSave] Payload:", activeTab.originalWorkflow)
+      console.log("[handleSave] Payload:", currentWorkflow)
 
       const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "text/plain;charset=UTF-8",
         },
-        body: JSON.stringify(activeTab.originalWorkflow),
+        body: JSON.stringify(currentWorkflow),
       })
 
       console.log(
@@ -85,10 +106,16 @@ export function EditorPage() {
       const responseText = await response.text().catch(() => "")
       console.log("[handleSave] Success response:", responseText)
 
-      // Clear the unsaved changes flag
+      // Clear the unsaved changes flag and update originalWorkflow to the saved version
       setTabs((prevTabs) =>
         prevTabs.map((tab) =>
-          tab.id === activeTabId ? { ...tab, hasUnsavedChanges: false } : tab,
+          tab.id === activeTabId
+            ? {
+                ...tab,
+                hasUnsavedChanges: false,
+                originalWorkflow: currentWorkflow,
+              }
+            : tab,
         ),
       )
       console.log("Workflow saved successfully")
@@ -119,6 +146,89 @@ export function EditorPage() {
       ),
     )
   }, [])
+
+  const handleNodesChange = useCallback(
+    (tabId: string) => (changes: NodeChange[]) => {
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) => {
+          if (tab.id !== tabId || !tab.graph) return tab
+          return {
+            ...tab,
+            graph: {
+              ...tab.graph,
+              nodes: applyNodeChanges(
+                changes,
+                tab.graph.nodes,
+              ) as Node<WorkflowNodeData>[],
+            },
+            hasUnsavedChanges: true,
+          }
+        }),
+      )
+    },
+    [],
+  )
+
+  const handleEdgesChange = useCallback(
+    (tabId: string) => (changes: EdgeChange[]) => {
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) => {
+          if (tab.id !== tabId || !tab.graph) return tab
+          return {
+            ...tab,
+            graph: {
+              ...tab.graph,
+              edges: applyEdgeChanges(changes, tab.graph.edges),
+            },
+            hasUnsavedChanges: true,
+          }
+        }),
+      )
+    },
+    [],
+  )
+
+  const handleConnect = useCallback(
+    (tabId: string) => (connection: Connection) => {
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) => {
+          if (tab.id !== tabId || !tab.graph) return tab
+          return {
+            ...tab,
+            graph: {
+              ...tab.graph,
+              edges: addEdge(connection, tab.graph.edges),
+            },
+            hasUnsavedChanges: true,
+          }
+        }),
+      )
+    },
+    [],
+  )
+
+  const handleNodeDataUpdate = useCallback(
+    (tabId: string, nodeId: string, data: Partial<WorkflowNodeData>) => {
+      setTabs((prevTabs) =>
+        prevTabs.map((tab) => {
+          if (tab.id !== tabId || !tab.graph) return tab
+          return {
+            ...tab,
+            graph: {
+              ...tab.graph,
+              nodes: tab.graph.nodes.map((node) =>
+                node.id === nodeId
+                  ? { ...node, data: { ...node.data, ...data } }
+                  : node,
+              ),
+            },
+            hasUnsavedChanges: true,
+          }
+        }),
+      )
+    },
+    [],
+  )
 
   const handleOpenWorkflow = useCallback(
     async (workflow: { path: string; name: string }) => {
@@ -329,11 +439,17 @@ export function EditorPage() {
             }
 
             return (
-              <FlowCanvas
-                nodes={tab.graph.nodes}
-                edges={tab.graph.edges}
-                onGraphChange={() => markTabAsUnsaved(tabId)}
-              />
+              <NodeDataUpdateProvider
+                value={(nodeId, data) => handleNodeDataUpdate(tabId, nodeId, data)}
+              >
+                <FlowCanvas
+                  nodes={tab.graph.nodes}
+                  edges={tab.graph.edges}
+                  onNodesChange={handleNodesChange(tabId)}
+                  onEdgesChange={handleEdgesChange(tabId)}
+                  onConnect={handleConnect(tabId)}
+                />
+              </NodeDataUpdateProvider>
             )
           }}
         </TabsHeader>

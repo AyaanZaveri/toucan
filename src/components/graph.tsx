@@ -23,7 +23,7 @@ import {
   nodeTypes,
 } from "@/components/graph/comfy-node"
 import { CommandPalette } from "@/components/graph/command-palette"
-import { API_BASE } from "@/components/graph/constants"
+import { API_BASE, WS_BASE } from "@/components/graph/constants"
 import { ExecutionStateContext } from "@/components/graph/execution-context"
 import { ExecutionHud } from "@/components/graph/execution-hud"
 import { GraphControls } from "@/components/graph/graph-controls"
@@ -95,6 +95,7 @@ export function ComfyFlowCanvas() {
     interrupt,
   } = useExecutionMonitor({
     apiBase: API_BASE,
+    wsBase: WS_BASE,
   })
 
   const { queuePrompt } = useQueuePrompt({

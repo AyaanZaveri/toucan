@@ -54,7 +54,7 @@ export const queuePrompt = async ({
 
   let response: Response
   try {
-    response = await fetch(`${baseUrl}/prompt`, {
+    response = await fetch(`${baseUrl}/api/prompt`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ prompt, extra_data }),
@@ -85,7 +85,7 @@ export const interruptPrompt = async ({
 }: InterruptPromptInput): Promise<InterruptPromptResult> => {
   let response: Response
   try {
-    response = await fetch(`${baseUrl}/interrupt`, {
+    response = await fetch(`${baseUrl}/api/interrupt`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(promptId ? { prompt_id: promptId } : {}),

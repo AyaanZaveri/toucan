@@ -10,6 +10,7 @@ import { interruptPrompt } from "@/lib/comfy/inference"
 
 type UseExecutionMonitorArgs = {
   apiBase: string
+  wsBase?: string // Optional separate WebSocket base URL
 }
 
 const EMPTY_STATE: ExecutionState = {
@@ -127,7 +128,7 @@ const parseNodeOutput = (value: unknown): NodeOutput | null => {
   return output
 }
 
-export const useExecutionMonitor = ({ apiBase }: UseExecutionMonitorArgs) => {
+export const useExecutionMonitor = ({ apiBase, wsBase }: UseExecutionMonitorArgs) => {
   const [state, setState] = React.useState<ExecutionState>(EMPTY_STATE)
   const displayNodeById = React.useRef<Map<string, string>>(new Map())
   const wsRef = React.useRef<WebSocket | null>(null)
@@ -175,7 +176,9 @@ export const useExecutionMonitor = ({ apiBase }: UseExecutionMonitorArgs) => {
       return
     }
     const clientId = getComfyClientId()
-    const wsUrl = toWsUrl(apiBase, clientId)
+    // Use wsBase if provided, otherwise fall back to apiBase for backward compatibility
+    const baseForWs = wsBase ?? apiBase
+    const wsUrl = toWsUrl(baseForWs, clientId)
     if (!wsUrl) {
       return
     }
@@ -446,7 +449,7 @@ export const useExecutionMonitor = ({ apiBase }: UseExecutionMonitorArgs) => {
       socket.removeEventListener("error", handleClose)
       socket.close()
     }
-  }, [apiBase, resolveNodeId])
+  }, [apiBase, wsBase, resolveNodeId])
 
   return { state, markPromptQueued, interrupt }
 }

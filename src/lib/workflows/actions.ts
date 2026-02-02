@@ -4,10 +4,13 @@ import type { ObjectInfo, WorkflowDefinition, WorkflowFileInfo } from "./types"
 
 /**
  * Get the base URL for the ComfyUI API
- * This should be configured via environment variable
+ * Server-side: call ComfyUI directly (no CORS issues server-to-server)
+ * Client-side: use proxy endpoint (handled elsewhere)
  */
 function getBaseUrl(): string {
-  const baseUrl = process.env.COMFY_API_BASE_URL || "http://localhost:8188"
+  // Server-side actions run in Node.js, so we call ComfyUI directly
+  // This avoids CORS since it's a server-to-server request
+  const baseUrl = process.env.COMFYUI_BASE_URL || "http://localhost:8188"
   return baseUrl
 }
 

@@ -12,6 +12,12 @@ import {
 } from "lucide-react"
 import * as React from "react"
 import { ModeToggle } from "@/components/mode-toggle"
+import { Badge } from "@/components/ui/badge"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Sidebar,
   SidebarContent,
@@ -28,19 +34,13 @@ import {
   SidebarMenuSubItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { Badge } from "@/components/ui/badge"
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
-  fetchObjectInfo,
-  transformObjectInfoToTree,
-  filterTree,
-  type NodeLibraryTree,
   type FolderNode,
+  fetchObjectInfo,
+  filterTree,
   type NodeLeaf,
+  type NodeLibraryTree,
+  transformObjectInfoToTree,
 } from "@/lib/comfy/objectInfoSidebar"
 
 // Static sections that don't change
@@ -75,11 +75,14 @@ const STATIC_SECTIONS = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Node library tree state
-  const [nodeLibraryTree, setNodeLibraryTree] = React.useState<NodeLibraryTree | null>(null)
+  const [nodeLibraryTree, setNodeLibraryTree] =
+    React.useState<NodeLibraryTree | null>(null)
   const [nodeLibraryLoading, setNodeLibraryLoading] = React.useState(true)
-  const [nodeLibraryError, setNodeLibraryError] = React.useState<string | null>(null)
+  const [nodeLibraryError, setNodeLibraryError] = React.useState<string | null>(
+    null,
+  )
   const [openFolders, setOpenFolders] = React.useState<Set<string>>(new Set())
-  
+
   // Navigation state
   const [navMain, setNavMain] = React.useState(() => {
     // Initialize with static sections + placeholder Node Library
@@ -93,11 +96,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ...STATIC_SECTIONS.slice(1), // Model Library, Workflows, Templates
     ]
   })
-  
+
   const [activeItem, setActiveItem] = React.useState(navMain[0])
   const [items, setItems] = React.useState(navMain[0].items)
   const [searchQuery, setSearchQuery] = React.useState("")
-  
+
   const { setOpen, toggleSidebar } = useSidebar()
 
   // Fetch node library on mount
@@ -106,15 +109,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       try {
         setNodeLibraryLoading(true)
         setNodeLibraryError(null)
-        
+
         const objectInfo = await fetchObjectInfo()
         const tree = transformObjectInfoToTree(objectInfo)
-        
+
         setNodeLibraryTree(tree)
       } catch (error) {
         console.error("Failed to load node library:", error)
         setNodeLibraryError(
-          error instanceof Error ? error.message : "Failed to load node library"
+          error instanceof Error
+            ? error.message
+            : "Failed to load node library",
         )
       } finally {
         setNodeLibraryLoading(false)
@@ -125,20 +130,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   // Handle clicking a sidebar icon
-  const handleSidebarIconClick = (item: typeof navMain[0]) => {
+  const handleSidebarIconClick = (item: (typeof navMain)[0]) => {
     const isCurrentlyActive = activeItem?.title === item.title
-    
+
     if (isCurrentlyActive) {
       toggleSidebar()
     } else {
       setActiveItem(item)
       setSearchQuery("")
-      
+
       // For non-Node Library sections, update items
       if (item.title !== "Node Library") {
         setItems(item.items)
       }
-      
+
       setOpen(true)
     }
   }
@@ -163,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     // Apply search filter
     if (searchQuery.trim()) {
       baseItems = baseItems.filter((item) =>
-        item.toLowerCase().includes(searchQuery.toLowerCase())
+        item.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     }
 
@@ -181,13 +186,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [nodeLibraryTree, searchQuery])
 
   // Recursive folder renderer
-  const renderFolder = (folder: FolderNode, depth: number = 0): React.ReactNode => {
+  const renderFolder = (
+    folder: FolderNode,
+    depth: number = 0,
+  ): React.ReactNode => {
     const isOpen = openFolders.has(folder.id) || autoOpen.has(folder.id)
     const clampedDepth = Math.min(depth, 6)
     const paddingLeft = 8 + clampedDepth * 8
 
     return (
-      <Collapsible key={folder.id} open={isOpen} onOpenChange={() => toggleFolder(folder.id)}>
+      <Collapsible
+        key={folder.id}
+        open={isOpen}
+        onOpenChange={() => toggleFolder(folder.id)}
+      >
         <SidebarMenuItem>
           <CollapsibleTrigger asChild>
             <SidebarMenuButton
@@ -199,7 +211,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               />
               <FolderIcon className="h-3.5 w-3.5 shrink-0" />
               <span className="min-w-0 flex-1 truncate">{folder.title}</span>
-              <Badge variant="secondary" className="shrink-0 h-5 px-2 text-[10px]">
+              <Badge
+                variant="secondary"
+                className="shrink-0 h-5 px-2 text-[10px]"
+              >
                 {folder.count}
               </Badge>
             </SidebarMenuButton>
@@ -315,15 +330,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarFooter>
       </Sidebar>
 
-      <Sidebar collapsible="none" className="hidden flex-1 md:flex flex-col min-w-0">
+      <Sidebar
+        collapsible="none"
+        className="hidden flex-1 md:flex flex-col min-w-0"
+      >
         <SidebarHeader className="gap-3.5 border-b p-4 shrink-0">
           <div className="flex w-full items-center justify-between">
             <div className="text-foreground text-base font-medium">
               {activeItem?.title}
             </div>
           </div>
-          <SidebarInput 
-            placeholder="Type to search..." 
+          <SidebarInput
+            placeholder="Type to search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -335,12 +353,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 // Node Library tree view
                 nodeLibraryLoading ? (
                   <div className="flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight">
-                    <span className="text-muted-foreground">Loading node library...</span>
+                    <span className="text-muted-foreground">
+                      Loading node library...
+                    </span>
                   </div>
                 ) : nodeLibraryError && !nodeLibraryTree ? (
                   <div className="flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight">
-                    <span className="text-destructive text-xs">{nodeLibraryError}</span>
-                    <span className="text-muted-foreground text-xs">Failed to load node library</span>
+                    <span className="text-destructive text-xs">
+                      {nodeLibraryError}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      Failed to load node library
+                    </span>
                   </div>
                 ) : filteredTree && filteredTree.children.length > 0 ? (
                   <SidebarMenu>
@@ -353,27 +377,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   </SidebarMenu>
                 ) : searchQuery.trim() ? (
                   <div className="flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight">
-                    <span className="text-muted-foreground">No results found</span>
+                    <span className="text-muted-foreground">
+                      No results found
+                    </span>
                   </div>
                 ) : null
+              ) : // Other sections - flat list view
+              displayItems.length === 0 ? (
+                <div className="flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight">
+                  <span className="text-muted-foreground">
+                    No results found
+                  </span>
+                </div>
               ) : (
-                // Other sections - flat list view
-                displayItems.length === 0 ? (
-                  <div className="flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight">
-                    <span className="text-muted-foreground">No results found</span>
-                  </div>
-                ) : (
-                  displayItems.map((item) => (
-                    <a
-                      href="#"
-                      key={item}
-                      onClick={(e) => e.preventDefault()}
-                      className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
-                    >
-                      <span className="font-medium">{item}</span>
-                    </a>
-                  ))
-                )
+                displayItems.map((item) => (
+                  <a
+                    href="#"
+                    key={item}
+                    onClick={(e) => e.preventDefault()}
+                    className="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight whitespace-nowrap last:border-b-0"
+                  >
+                    <span className="font-medium">{item}</span>
+                  </a>
+                ))
               )}
             </SidebarGroupContent>
           </SidebarGroup>

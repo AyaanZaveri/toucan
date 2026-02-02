@@ -6,6 +6,7 @@ import {
   useConnection,
 } from "@xyflow/react"
 import { useMemo } from "react"
+import { useNodeDataUpdate } from "@/components/editor/node-data-context"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,6 @@ import type {
   SettingsNodeData,
 } from "@/lib/graph-converter"
 import type { WorkflowNodeData } from "@/lib/workflows/converter"
-import { useNodeDataUpdate } from "@/components/editor/node-data-context"
 
 /**
  * ComfyUI Node - displays inputs and outputs with handles
@@ -171,10 +171,13 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
                           !Array.isArray(data.widgetValues)
                             ? data.widgetValues
                             : {}
-                        
+
                         // Debug log to confirm updates
-                        console.log(`[Widget Update] Node ${id}, ${input.name}:`, newValue)
-                        
+                        console.log(
+                          `[Widget Update] Node ${id}, ${input.name}:`,
+                          newValue,
+                        )
+
                         updateNodeData(id, {
                           widgetValues: {
                             ...existingWidgetValues,
@@ -191,8 +194,10 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
               if (showDropdown) {
                 // TODO: Add proper COMBO options list from ComfyUI objectInfo
                 // For now, wire up the onChange handler for when options are available
-                const comboOptions = (input as any).widget?.values ? [(input as any).widget.values] : [widgetValue]
-                
+                const comboOptions = (input as any).widget?.values
+                  ? [(input as any).widget.values]
+                  : [widgetValue]
+
                 return (
                   <div key={`input-${idx}`} className="relative">
                     <Handle
@@ -222,10 +227,13 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
                                 !Array.isArray(data.widgetValues)
                                   ? data.widgetValues
                                   : {}
-                              
+
                               // Debug log to confirm updates
-                              console.log(`[Widget Update] Node ${id}, ${input.name}:`, option)
-                              
+                              console.log(
+                                `[Widget Update] Node ${id}, ${input.name}:`,
+                                option,
+                              )
+
                               updateNodeData(id, {
                                 widgetValues: {
                                   ...existingWidgetValues,

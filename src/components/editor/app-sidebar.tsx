@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   BoxIcon,
@@ -9,15 +9,15 @@ import {
   FileIcon,
   FolderIcon,
   LayoutTemplateIcon,
-} from "lucide-react"
-import * as React from "react"
-import { ModeToggle } from "@/components/mode-toggle"
-import { Badge } from "@/components/ui/badge"
+} from "lucide-react";
+import * as React from "react";
+import { ModeToggle } from "@/components/mode-toggle";
+import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
@@ -33,7 +33,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import {
   type FolderNode,
   fetchObjectInfo,
@@ -41,7 +41,8 @@ import {
   type NodeLeaf,
   type NodeLibraryTree,
   transformObjectInfoToTree,
-} from "@/lib/comfy/objectInfoSidebar"
+} from "@/lib/comfy/objectInfoSidebar";
+import { ComfyUI } from "@lobehub/icons";
 
 // Static sections that don't change
 const STATIC_SECTIONS = [
@@ -71,17 +72,17 @@ const STATIC_SECTIONS = [
       "ControlNet",
     ],
   },
-]
+];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Node library tree state
   const [nodeLibraryTree, setNodeLibraryTree] =
-    React.useState<NodeLibraryTree | null>(null)
-  const [nodeLibraryLoading, setNodeLibraryLoading] = React.useState(true)
+    React.useState<NodeLibraryTree | null>(null);
+  const [nodeLibraryLoading, setNodeLibraryLoading] = React.useState(true);
   const [nodeLibraryError, setNodeLibraryError] = React.useState<string | null>(
-    null,
-  )
-  const [openFolders, setOpenFolders] = React.useState<Set<string>>(new Set())
+    null
+  );
+  const [openFolders, setOpenFolders] = React.useState<Set<string>>(new Set());
 
   // Navigation state
   const [navMain, setNavMain] = React.useState(() => {
@@ -94,105 +95,103 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         items: ["Loading..."],
       },
       ...STATIC_SECTIONS.slice(1), // Model Library, Workflows, Templates
-    ]
-  })
+    ];
+  });
 
-  const [activeItem, setActiveItem] = React.useState(navMain[0])
-  const [items, setItems] = React.useState(navMain[0].items)
-  const [searchQuery, setSearchQuery] = React.useState("")
+  const [activeItem, setActiveItem] = React.useState(navMain[0]);
+  const [items, setItems] = React.useState(navMain[0].items);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
-  const { setOpen, toggleSidebar } = useSidebar()
+  const { setOpen, toggleSidebar } = useSidebar();
 
   // Fetch node library on mount
   React.useEffect(() => {
     async function loadNodeLibrary() {
       try {
-        setNodeLibraryLoading(true)
-        setNodeLibraryError(null)
+        setNodeLibraryLoading(true);
+        setNodeLibraryError(null);
 
-        const objectInfo = await fetchObjectInfo()
-        const tree = transformObjectInfoToTree(objectInfo)
+        const objectInfo = await fetchObjectInfo();
+        const tree = transformObjectInfoToTree(objectInfo);
 
-        setNodeLibraryTree(tree)
+        setNodeLibraryTree(tree);
       } catch (error) {
-        console.error("Failed to load node library:", error)
+        console.error("Failed to load node library:", error);
         setNodeLibraryError(
-          error instanceof Error
-            ? error.message
-            : "Failed to load node library",
-        )
+          error instanceof Error ? error.message : "Failed to load node library"
+        );
       } finally {
-        setNodeLibraryLoading(false)
+        setNodeLibraryLoading(false);
       }
     }
 
-    loadNodeLibrary()
-  }, [])
+    loadNodeLibrary();
+  }, []);
 
   // Handle clicking a sidebar icon
   const handleSidebarIconClick = (item: (typeof navMain)[0]) => {
-    const isCurrentlyActive = activeItem?.title === item.title
+    const isCurrentlyActive = activeItem?.title === item.title;
 
     if (isCurrentlyActive) {
-      toggleSidebar()
+      toggleSidebar();
     } else {
-      setActiveItem(item)
-      setSearchQuery("")
+      setActiveItem(item);
+      setSearchQuery("");
 
       // For non-Node Library sections, update items
       if (item.title !== "Node Library") {
-        setItems(item.items)
+        setItems(item.items);
       }
 
-      setOpen(true)
+      setOpen(true);
     }
-  }
+  };
 
   // Toggle folder open/closed state
   const toggleFolder = (folderId: string) => {
     setOpenFolders((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(folderId)) {
-        next.delete(folderId)
+        next.delete(folderId);
       } else {
-        next.add(folderId)
+        next.add(folderId);
       }
-      return next
-    })
-  }
+      return next;
+    });
+  };
 
   // Get the current display items based on state and search (for non-Node Library sections)
   const getDisplayItems = (): string[] => {
-    let baseItems = items
+    let baseItems = items;
 
     // Apply search filter
     if (searchQuery.trim()) {
       baseItems = baseItems.filter((item) =>
-        item.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
+        item.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
 
-    return baseItems
-  }
+    return baseItems;
+  };
 
-  const displayItems = getDisplayItems()
+  const displayItems = getDisplayItems();
 
   // Get filtered tree and auto-open folders for Node Library search
   const { tree: filteredTree, autoOpen } = React.useMemo(() => {
     if (!nodeLibraryTree) {
-      return { tree: null, autoOpen: new Set<string>() }
+      return { tree: null, autoOpen: new Set<string>() };
     }
-    return filterTree(nodeLibraryTree, searchQuery)
-  }, [nodeLibraryTree, searchQuery])
+    return filterTree(nodeLibraryTree, searchQuery);
+  }, [nodeLibraryTree, searchQuery]);
 
   // Recursive folder renderer
   const renderFolder = (
     folder: FolderNode,
-    depth: number = 0,
+    depth: number = 0
   ): React.ReactNode => {
-    const isOpen = openFolders.has(folder.id) || autoOpen.has(folder.id)
-    const clampedDepth = Math.min(depth, 6)
-    const paddingLeft = 8 + clampedDepth * 8
+    const isOpen = openFolders.has(folder.id) || autoOpen.has(folder.id);
+    const clampedDepth = Math.min(depth, 6);
+    const paddingLeft = 8 + clampedDepth * 8;
 
     return (
       <Collapsible
@@ -223,22 +222,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuSub className="mx-0 border-l-0 px-0">
               {folder.children.map((child) => {
                 if (child.kind === "folder") {
-                  return renderFolder(child, depth + 1)
+                  return renderFolder(child, depth + 1);
                 } else {
-                  return renderNode(child, depth + 1)
+                  return renderNode(child, depth + 1);
                 }
               })}
             </SidebarMenuSub>
           </CollapsibleContent>
         </SidebarMenuItem>
       </Collapsible>
-    )
-  }
+    );
+  };
 
   // Node leaf renderer
   const renderNode = (node: NodeLeaf, depth: number = 0): React.ReactNode => {
-    const clampedDepth = Math.min(depth, 6)
-    const paddingLeft = 12 + clampedDepth * 12
+    const clampedDepth = Math.min(depth, 6);
+    const paddingLeft = 12 + clampedDepth * 12;
 
     return (
       <SidebarMenuSubItem key={node.key}>
@@ -257,8 +256,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </a>
         </SidebarMenuSubButton>
       </SidebarMenuSubItem>
-    )
-  }
+    );
+  };
 
   return (
     <Sidebar
@@ -275,8 +274,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild className="md:h-8 md:p-0">
                 <a href="#">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Command className="size-4" />
+                  <div className="text-sidebar-primary flex aspect-square size-8 items-center justify-center rounded-lg">
+                    {/* <Command className="size-4" /> */}
+                    <ComfyUI size={56} />
                   </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">Toucan</span>
@@ -332,7 +332,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <Sidebar
         collapsible="none"
-        className="hidden flex-1 md:flex flex-col min-w-0"
+        className="hidden flex-1 md:flex flex-col min-w-0 group-data-[collapsible=icon]:hidden"
       >
         <SidebarHeader className="gap-3.5 border-b p-4 shrink-0">
           <div className="flex w-full items-center justify-between">
@@ -370,9 +370,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <SidebarMenu>
                     {filteredTree.children.map((child) => {
                       if (child.kind === "folder") {
-                        return renderFolder(child, 0)
+                        return renderFolder(child, 0);
                       }
-                      return null
+                      return null;
                     })}
                   </SidebarMenu>
                 ) : searchQuery.trim() ? (
@@ -406,5 +406,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarContent>
       </Sidebar>
     </Sidebar>
-  )
+  );
 }

@@ -102,7 +102,7 @@ export function ComfyNode({ data, id }: NodeProps<Node<WorkflowNodeData>>) {
   }
 
   return (
-    <div className="shadow-2xl shadow-accent/25 rounded-lg bg-card border border-border min-w-[200px] max-w-[400px]">
+    <div className="shadow-2xl shadow-foreground/5 rounded-lg bg-card border border-border min-w-[200px] max-w-[400px]">
       {/* Node Header */}
       <div className="px-3 py-2 bg-muted border-b border-border rounded-t-lg">
         <div className="font-semibold text-sm text-card-foreground">

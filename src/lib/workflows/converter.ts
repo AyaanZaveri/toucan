@@ -177,6 +177,24 @@ export function buildWorkflowFromFlow(
   // Create a map of flow nodes by ID for quick lookup
   const flowNodeMap = new Map(flowNodes.map((node) => [node.id, node]))
 
+  // Remove nodes that no longer exist in the flow (deleted in the UI)
+  // Preserve order according to the current flow nodes.
+  const workflowNodeMap = new Map(
+    workflow.nodes.map((node) => [node.id.toString(), node]),
+  )
+  const filteredNodes: WorkflowNode[] = []
+  for (const flowNode of flowNodes) {
+    const existingNode = workflowNodeMap.get(flowNode.id)
+    if (existingNode) {
+      filteredNodes.push(existingNode)
+    } else {
+      console.warn(
+        `[buildWorkflowFromFlow] Missing base node for flow node ${flowNode.id}; skipping.`,
+      )
+    }
+  }
+  workflow.nodes = filteredNodes
+
   // Build a map to track new link IDs
   let nextLinkId = workflow.last_link_id + 1
   const edgeLinkMap = new Map<string, number>() // edge.id -> linkId

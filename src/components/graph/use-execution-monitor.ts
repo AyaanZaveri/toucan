@@ -128,7 +128,10 @@ const parseNodeOutput = (value: unknown): NodeOutput | null => {
   return output
 }
 
-export const useExecutionMonitor = ({ apiBase, wsBase }: UseExecutionMonitorArgs) => {
+export const useExecutionMonitor = ({
+  apiBase,
+  wsBase,
+}: UseExecutionMonitorArgs) => {
   const [state, setState] = React.useState<ExecutionState>(EMPTY_STATE)
   const displayNodeById = React.useRef<Map<string, string>>(new Map())
   const wsRef = React.useRef<WebSocket | null>(null)

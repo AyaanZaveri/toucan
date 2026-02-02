@@ -1,5 +1,5 @@
 import type { Edge, Node } from "@xyflow/react"
-import type { WorkflowDefinition, WorkflowNode, WorkflowLink } from "./types"
+import type { WorkflowDefinition, WorkflowLink, WorkflowNode } from "./types"
 
 /**
  * Custom data type for workflow nodes in React Flow
@@ -251,7 +251,7 @@ export function buildWorkflowFromFlow(
     // We need to rebuild the array in the correct order based on inputs with widgets
     const widgetValues = flowNode.data.widgetValues ?? {}
     const orderedValues: unknown[] = []
-    
+
     for (const input of workflowNode.inputs) {
       if (input.widget) {
         // If widgetValues is a Record, get value by input name

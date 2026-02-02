@@ -3,8 +3,7 @@ import { type NextRequest, NextResponse } from "next/server"
 // Force dynamic rendering for this route (required for proxying)
 export const dynamic = "force-dynamic"
 
-const COMFYUI_BASE_URL =
-  process.env.COMFYUI_BASE_URL ?? "http://localhost:8188"
+const COMFYUI_BASE_URL = process.env.COMFYUI_BASE_URL ?? "http://localhost:8188"
 
 // Headers to remove when proxying (hop-by-hop headers)
 const HEADERS_TO_REMOVE = new Set([
@@ -34,7 +33,7 @@ const HEADERS_TO_REMOVE = new Set([
 /**
  * Build the upstream path, handling special cases like ComfyUI's userdata endpoint
  * that expects %2F-encoded folder separators in a single path segment
- * 
+ *
  * Note: Our Next route is /comfy/[...path], so pathSegments includes everything after /comfy
  * Example: /comfy/api/userdata/workflows%2Falpaca.json
  * becomes: ["api", "userdata", "workflows/alpaca.json"] (Next decodes %2F)

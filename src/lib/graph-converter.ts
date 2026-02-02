@@ -1,5 +1,8 @@
 import type { Edge, Node } from "@xyflow/react"
-import { convertWorkflowToFlow, type WorkflowNodeData } from "./workflows/converter"
+import {
+  convertWorkflowToFlow,
+  type WorkflowNodeData,
+} from "./workflows/converter"
 import type { WorkflowDefinition } from "./workflows/types"
 
 /**

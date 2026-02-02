@@ -1,4 +1,4 @@
-"use client";
+"use client"
 
 import {
   Background,
@@ -8,19 +8,19 @@ import {
   type Node,
   type NodeChange,
   ReactFlow,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { useCallback } from "react";
-import type { WorkflowNodeData } from "@/lib/workflows/converter";
-import { CustomControls } from "./custom-controls";
-import { editorNodeTypes } from "./node-types";
+} from "@xyflow/react"
+import "@xyflow/react/dist/style.css"
+import { useCallback } from "react"
+import type { WorkflowNodeData } from "@/lib/workflows/converter"
+import { CustomControls } from "./custom-controls"
+import { editorNodeTypes } from "./node-types"
 
 interface FlowCanvasProps {
-  nodes: Node<WorkflowNodeData>[];
-  edges: Edge[];
-  onNodesChange: (changes: NodeChange[]) => void;
-  onEdgesChange: (changes: EdgeChange[]) => void;
-  onConnect: (connection: Connection) => void;
+  nodes: Node<WorkflowNodeData>[]
+  edges: Edge[]
+  onNodesChange: (changes: NodeChange[]) => void
+  onEdgesChange: (changes: EdgeChange[]) => void
+  onConnect: (connection: Connection) => void
 }
 
 /**
@@ -39,50 +39,50 @@ export function FlowCanvas({
     (connection: Connection | Edge) => {
       // Prevent input→input or output→output connections
       // ReactFlow already prevents this, but we check explicitly
-      const source = connection.source;
-      const target = connection.target;
-      const sourceHandle = connection.sourceHandle ?? null;
-      const targetHandle = connection.targetHandle ?? null;
+      const source = connection.source
+      const target = connection.target
+      const sourceHandle = connection.sourceHandle ?? null
+      const targetHandle = connection.targetHandle ?? null
 
-      if (!source || !target) return false;
+      if (!source || !target) return false
 
-      const sourceNode = nodes.find((n) => n.id === source);
-      const targetNode = nodes.find((n) => n.id === target);
+      const sourceNode = nodes.find((n) => n.id === source)
+      const targetNode = nodes.find((n) => n.id === target)
 
-      if (!sourceNode || !targetNode) return false;
+      if (!sourceNode || !targetNode) return false
 
       // Extract handle indices from handle IDs (format: "nodeId-output-idx" or "nodeId-input-idx")
-      const sourceHandleId = sourceHandle || "";
-      const targetHandleId = targetHandle || "";
+      const sourceHandleId = sourceHandle || ""
+      const targetHandleId = targetHandle || ""
 
       const sourceIdx = Number.parseInt(
         sourceHandleId.split("-").pop() || "-1",
-        10
-      );
+        10,
+      )
       const targetIdx = Number.parseInt(
         targetHandleId.split("-").pop() || "-1",
-        10
-      );
+        10,
+      )
 
-      if (sourceIdx < 0 || targetIdx < 0) return false;
+      if (sourceIdx < 0 || targetIdx < 0) return false
 
-      const sourceData = sourceNode.data as WorkflowNodeData;
-      const targetData = targetNode.data as WorkflowNodeData;
+      const sourceData = sourceNode.data as WorkflowNodeData
+      const targetData = targetNode.data as WorkflowNodeData
 
-      const sourceOutput = sourceData.outputs?.[sourceIdx];
-      const targetInput = targetData.inputs?.[targetIdx];
+      const sourceOutput = sourceData.outputs?.[sourceIdx]
+      const targetInput = targetData.inputs?.[targetIdx]
 
-      if (!sourceOutput || !targetInput) return false;
+      if (!sourceOutput || !targetInput) return false
 
       // Normalize types for comparison (case-insensitive)
-      const sourceType = sourceOutput.type.toLowerCase();
-      const targetType = targetInput.type.toLowerCase();
+      const sourceType = sourceOutput.type.toLowerCase()
+      const targetType = targetInput.type.toLowerCase()
 
       // Types must match exactly
-      return sourceType === targetType;
+      return sourceType === targetType
     },
-    [nodes]
-  );
+    [nodes],
+  )
 
   return (
     <div className="w-full h-full">
@@ -105,5 +105,5 @@ export function FlowCanvas({
         <CustomControls />
       </ReactFlow>
     </div>
-  );
+  )
 }

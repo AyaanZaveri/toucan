@@ -1,11 +1,6 @@
 "use client"
 
-import {
-  Handle,
-  type Node,
-  type NodeProps,
-  Position,
-} from "@xyflow/react"
+import { Handle, type Node, type NodeProps, Position } from "@xyflow/react"
 import Image from "next/image"
 import * as React from "react"
 import { useNodeDataUpdate } from "@/components/editor/node-data-context"

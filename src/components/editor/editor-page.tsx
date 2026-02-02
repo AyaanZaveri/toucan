@@ -440,7 +440,9 @@ export function EditorPage() {
 
             return (
               <NodeDataUpdateProvider
-                value={(nodeId, data) => handleNodeDataUpdate(tabId, nodeId, data)}
+                value={(nodeId, data) =>
+                  handleNodeDataUpdate(tabId, nodeId, data)
+                }
               >
                 <FlowCanvas
                   nodes={tab.graph.nodes}
